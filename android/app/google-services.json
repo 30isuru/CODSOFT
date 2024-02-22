@@ -1,0 +1,48 @@
+{
+  "project_info": {
+    "project_number": "210976210434",
+    "project_id": "practriceapp-768d1",
+    "storage_bucket": "practriceapp-768d1.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:210976210434:android:e3ca18706b3c398eeef11b",
+        "android_client_info": {
+          "package_name": "com.example.demo2"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCOfcTM8_yiEThVcW-deFb5esTrN9NBlhM"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:210976210434:android:19c08e4d789a7981eef11b",
+        "android_client_info": {
+          "package_name": "com.example.todo_app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCOfcTM8_yiEThVcW-deFb5esTrN9NBlhM"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

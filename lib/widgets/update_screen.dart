@@ -23,7 +23,6 @@ class _UpdateToDoScreenState extends State<UpdateToDoScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       body: SingleChildScrollView(
-        // Wrap with SingleChildScrollView
         child: Container(
           height: MediaQuery.of(context).size.height,
           decoration: const BoxDecoration(
@@ -89,8 +88,20 @@ class _UpdateToDoScreenState extends State<UpdateToDoScreen> {
   void _onUpdateItem() {
     String updatedTitle = _updateController.text.trim();
     if (updatedTitle.isNotEmpty) {
-      ToDo updatedTodo = widget.todo.copyWith(title: updatedTitle);
-      Navigator.pop(context, updatedTodo);
+      // Update the title in the local widget.todo
+      widget.todo.title = updatedTitle;
+
+      // Save the updated task to Firestore
+      widget.todo.saveToFirestore().then((_) {
+        Navigator.pop(context);
+      }).catchError((error) {
+        print('Error updating task: $error');
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Error updating task. Please try again.'),
+          ),
+        );
+      });
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(

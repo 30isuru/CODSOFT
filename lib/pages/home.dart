@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:todo_app/models/todo.dart';
 import 'package:todo_app/widgets/todo_item.dart';
 import '../widgets/update_screen.dart';
@@ -11,7 +12,9 @@ class Home extends StatefulWidget {
 }
 
 class _HomeState extends State<Home> {
-  final tasks = ToDo.todoList();
+  final CollectionReference todoCollection =
+      FirebaseFirestore.instance.collection('todos');
+
   final _toDoController = TextEditingController();
 
   @override
@@ -45,25 +48,36 @@ class _HomeState extends State<Home> {
                     ),
                   ),
                   Expanded(
-                    child: ListView.builder(
-                      shrinkWrap: true,
-                      itemCount: tasks.length,
-                      itemBuilder: (context, index) => ToDoItem(
-                        todo: tasks[index],
-                        onchangeitem: (ToDo toDo) {
-                          setState(() {
-                            tasks[index].isdone = toDo.isdone == 1 ? 0 : 1;
-                          });
-                        },
-                        ondeleteitem: (String id) {
-                          setState(() {
-                            tasks.removeWhere((element) => element.id == id);
-                          });
-                        },
-                        onupdateitem: (ToDo toDo) {
-                          _onUpdateItem(toDo);
-                        },
-                      ),
+                    child: StreamBuilder<QuerySnapshot>(
+                      stream: todoCollection.snapshots(),
+                      builder: (context, snapshot) {
+                        if (!snapshot.hasData) {
+                          return CircularProgressIndicator();
+                        }
+
+                        var tasks = snapshot.data!.docs
+                            .map((doc) => ToDo.fromMap(
+                                doc.data() as Map<String, dynamic>, doc.id))
+                            .toList();
+
+                        return ListView.builder(
+                          shrinkWrap: true,
+                          itemCount: tasks.length,
+                          itemBuilder: (context, index) => ToDoItem(
+                            todo: tasks[index],
+                            onChangeItem: (ToDo toDo) {
+                              _updateTaskStatus(
+                                  tasks[index].id, toDo.isdone == 1 ? 0 : 1);
+                            },
+                            onDeleteItem: (String id) {
+                              _deleteTask(id);
+                            },
+                            onUpdateItem: (ToDo toDo) {
+                              _onUpdateItem(toDo);
+                            },
+                          ),
+                        );
+                      },
                     ),
                   ),
                 ],
@@ -120,7 +134,6 @@ class _HomeState extends State<Home> {
         ],
       ),
     );
-    // appBar: _appBarWidget(),
   }
 
   _appBarWidget() {
@@ -134,19 +147,25 @@ class _HomeState extends State<Home> {
     );
   }
 
-  void _onAddItem(String title) {
+  void _onAddItem(String title) async {
     if (title.isNotEmpty) {
-      setState(() {
-        tasks.add(ToDo(
-          id: DateTime.now().microsecondsSinceEpoch.toString(),
-          title: title,
-          isdone: 0,
-        ));
-      });
+      try {
+        await todoCollection.add({
+          'title': title,
+          'isdone': 0,
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Task added successfully'),
+          ),
+        );
+      } catch (e) {
+        print('Error adding task: $e');
+      }
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('please enter a task'),
+          content: Text('Please enter a task'),
         ),
       );
     }
@@ -161,13 +180,42 @@ class _HomeState extends State<Home> {
       ),
     ).then((updatedTodo) {
       if (updatedTodo != null) {
-        int index = tasks.indexWhere((element) => element.id == updatedTodo.id);
-        if (index != -1) {
-          setState(() {
-            tasks[index] = updatedTodo;
-          });
-        }
+        _updateTask(updatedTodo);
       }
     });
+  }
+
+  void _updateTask(ToDo updatedTodo) async {
+    try {
+      await todoCollection.doc(updatedTodo.id).update(updatedTodo.toMap());
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Task updated successfully'),
+        ),
+      );
+    } catch (e) {
+      print('Error updating task: $e');
+    }
+  }
+
+  void _updateTaskStatus(String taskId, int newStatus) async {
+    try {
+      await todoCollection.doc(taskId).update({'isdone': newStatus});
+    } catch (e) {
+      print('Error updating task status: $e');
+    }
+  }
+
+  void _deleteTask(String taskId) async {
+    try {
+      await todoCollection.doc(taskId).delete();
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Task deleted successfully'),
+        ),
+      );
+    } catch (e) {
+      print('Error deleting task: $e');
+    }
   }
 }
